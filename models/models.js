@@ -129,12 +129,7 @@ Proxy.getUnusing = function() {
 		Proxy.findOne(
 			{
 				limit: 1,
-				order: 'RAND()',
-				where: {
-					app_using: {
-						like: 'no'
-					}
-				}
+				order: 'last_use ASC'
 			},
 			function(err, item) {
 				if (err) {
@@ -143,25 +138,25 @@ Proxy.getUnusing = function() {
 				}
 
 				try {
-					Proxy.update(
-						{
-							where: {
-								id: item.id
-							}
-						},
-						{
-							app_using: 'yes'
-						},
-						function(err, it) {
-							// your code here
-							if ( err ) {
-								console.log( 'ERR update Update proxy using: ' );
-							} else {
-								console.log( 'Update proxy using: ', item.id );
-							}
+					// Proxy.update(
+					// 	{
+					// 		where: {
+					// 			id: item.id
+					// 		}
+					// 	},
+					// 	{
+					// 		app_using: 'yes'
+					// 	},
+					// 	function(err, it) {
+					// 		// your code here
+					// 		if ( err ) {
+					// 			console.log( 'ERR update Update proxy using: ' );
+					// 		} else {
+					// 			console.log( 'Update proxy using: ', item.id );
+					// 		}
 							
-						}
-					);
+					// 	}
+					// );
 				} catch ( e ) {
 
 				}

@@ -3,11 +3,11 @@ const colors = require('colors');
 const config = require('../config');
 const events = require('events');
 const { Product, CatLink, Flag, Proxy } = require('../models/models');
+const dateFormat = require('dateformat');
 
 const Browser = function() {
 	let scope = this;
 
-	scope.count = 0;
 	scope.browsers = [];
 	scope.listProxies = [];
 	scope.eventEmitter = new events.EventEmitter();
@@ -58,12 +58,13 @@ const Browser = function() {
 
 	scope.setProxyUsing = async function(proxy, isUsing) {
 		return new Promise((resolve) => {
+			const dateNow = dateFormat(+new Date(), 'yyyy-mm-dd HH:MM:ss');
 			Proxy.update(
 				{
 					id: proxy.id
 				},
 				{
-					app_using: isUsing ? 'yes' : 'no'
+					last_use: dateNow
 				},
 				function(err, item) {
 					if (err) {
@@ -77,10 +78,6 @@ const Browser = function() {
 				}
 			);
 		});
-	};
-
-	scope.countNumber = function() {
-		return this.count;
 	};
 
 	scope.changeZipCode = async function(page) {
@@ -146,23 +143,15 @@ const Browser = function() {
 		});
 	};
 
-	scope.closeBrowser = function(browser) {
+	scope.closeBrowser = async function(browser) {
 		try {
-			if (this.count) {
-				this.count--;
-			}
 			if (browser) {
-				browser.close();
+				await browser.close();
 			}
-
-			scope.eventEmitter.emit('browser_closed', this );
 		} catch (e) {}
 	};
 
-	scope.add = async function() {
-		this.count++;
-
-		console.log( 'scope.count: ', scope.count );
+	scope.init = async function() {
 
 		proxy = await scope.getProxy();
 
@@ -263,8 +252,10 @@ const Browser = function() {
 					countToDelay = 0;
 					console.log(colors.yellow('Close browser -----------'));
 					await scope.setProxyUsing(proxy, false);
-					await page.waitFor(2000);
-					checkingUnixDate = false;
+					//await page.waitFor(15000);
+					//checkingUnixDate = false;
+					await browser.close();
+					break;
 				}
 
 				try {
@@ -275,8 +266,9 @@ const Browser = function() {
 					if ('Robot Check' == text) {
 						console.log(colors.red('Robot check: ' + checkingUnixDate));
 						scope.setProxyUsing(proxy, true);
-						scope.closeBrowser(browser);
+						await browser.close();
 						checkingUnixDate = null;
+						break;
 					}
 
 					const products = await scope.getPageProducts(page);
@@ -314,11 +306,17 @@ const Browser = function() {
 				await page.waitFor(1200);
 			} // end while checking date
 
-			scope.closeBrowser(browser); // All checked
+			// scope.closeBrowser(browser); // All checked
+			
+			console.log('End Loop...... Reopen Browser');
+			await new Promise(done => setTimeout(done, 5000));
+			await scope.init(); // re-add browser.
 
 		} catch (error) {
 			console.log('Catch Browser ERROR: ' + error);
-			scope.closeBrowser( browser );
+			console.log('Reopen Browser');
+			await new Promise(done => setTimeout(done, 5000));
+			await scope.init(); // re-add browser.
 		}
 	};
 };

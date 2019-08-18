@@ -1,7 +1,7 @@
 const config = {
 	startDate: 1565917200,
 	numberToCheck: 50000,
-	checkDelay: 25,
+	checkDelay: 20,
 	numberBrowser: 2,
 	zipCode: '90213',
 	saveDb: true,

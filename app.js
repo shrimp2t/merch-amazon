@@ -34,20 +34,20 @@ if (cluster.isMaster) {
 		const b = new Browser();
 		// console.log('listProxies: ', listProxies);
 		b.setTodayUnix(unixDateNow);
-		b.add();
-		b.on('browser_closed', function( browser ) {
-			try {
-				if ( browser.browsers.length  ) {
-					for ( let i = 0; i< browser.browsers.length ; i++ ) {
-						browser.browsers[i].close();
-					}
-				}
-			} catch( e ) {
+		b.init();
+		// b.on('browser_closed', function( browser ) {
+		// 	// try {
+		// 	// 	if ( browser.browsers.length  ) {
+		// 	// 		for ( let i = 0; i< browser.browsers.length ; i++ ) {
+		// 	// 			browser.browsers[i].close();
+		// 	// 		}
+		// 	// 	}
+		// 	// } catch( e ) {
 
-			}
-			// console.log( 'browsers: ', browser.browsers.length );
-			b.add();
-		});
+		// 	// }
+		// 	// // console.log( 'browsers: ', browser.browsers.length );
+		// 	// b.init();
+		// });
 	})();
   }
 
