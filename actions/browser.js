@@ -56,18 +56,30 @@ const Browser = function() {
 		return null;
 	};
 
-	scope.setProxyUsing = function(proxy, isUsing) {
-		if (proxy) {
-			if (typeof isUsing == 'undefined') {
-				isUsing = true;
-			}
-			try {
-				scope.listProxies[proxy.index].blocked = isUsing;
-			} catch (e) {}
-		}
+	scope.setProxyUsing = async function(proxy, isUsing) {
+		return new Promise((resolve) => {
+			Proxy.update(
+				{
+					id: proxy.id
+				},
+				{
+					app_using: isUsing ? 'yes' : 'no'
+				},
+				function(err, item) {
+					if (err) {
+						console.log( 'Err get proxy: ', err );
+						return resolve( false );
+					}
+
+					console.log( 'Release Proxy: ', proxy.id );
+	
+					resolve(true);
+				}
+			);
+		});
 	};
 
-	scope.count = function() {
+	scope.countNumber = function() {
 		return this.count;
 	};
 
@@ -136,19 +148,21 @@ const Browser = function() {
 
 	scope.closeBrowser = function(browser) {
 		try {
-			if (scope.count) {
-				scope.count--;
+			if (this.count) {
+				this.count--;
 			}
 			if (browser) {
 				browser.close();
 			}
 
-			scope.eventEmitter.emit('browser_closed');
+			scope.eventEmitter.emit('browser_closed', this );
 		} catch (e) {}
 	};
 
 	scope.add = async function() {
-		scope.count++;
+		this.count++;
+
+		console.log( 'scope.count: ', scope.count );
 
 		proxy = await scope.getProxy();
 
@@ -171,7 +185,7 @@ const Browser = function() {
 			} else {
 				userProxyPwd = true;
 				console.log('User Proxy and PWD: ' + proxy.ip);
-				broswerArgs.push('--proxy-server=' + proxy.ip+':'+proxy.port);
+				broswerArgs.push('--proxy-server=' + proxy.ip + ':' + proxy.port);
 			}
 		}
 
@@ -240,7 +254,6 @@ const Browser = function() {
 				let qid = Math.round(+new Date() / 1000);
 				let link = config.linkFormat.replace(/{{qid}}/gi, qid);
 				link = link.replace(/{{date_abs}}/gi, checkingUnixDate);
-				
 
 				console.log('Checking ID %s, LINK: ', checkingUnixDate, link);
 				await page.goto(link);
@@ -248,8 +261,10 @@ const Browser = function() {
 
 				if (countToDelay >= config.checkDelay) {
 					countToDelay = 0;
-					console.log(colors.yellow('Delay for robot check -----------'));
-					await page.waitFor(13000);
+					console.log(colors.yellow('Close browser -----------'));
+					await scope.setProxyUsing(proxy, false);
+					await page.waitFor(2000);
+					checkingUnixDate = false;
 				}
 
 				try {
@@ -286,9 +301,7 @@ const Browser = function() {
 					console.log('Title not found!');
 				}
 
-
-
-				await Flag.updateFlagCheck( uncheck_unix.unix_id );
+				await Flag.updateFlagCheck(uncheck_unix.unix_id);
 
 				uncheck_unix = await Flag.getUncheck();
 				if (!uncheck_unix) {
@@ -299,11 +312,13 @@ const Browser = function() {
 				}
 
 				await page.waitFor(1200);
-
 			} // end while checking date
+
+			scope.closeBrowser(browser); // All checked
+
 		} catch (error) {
 			console.log('Catch Browser ERROR: ' + error);
-			scope.closeBrowser();
+			scope.closeBrowser( browser );
 		}
 	};
 };

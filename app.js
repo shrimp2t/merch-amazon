@@ -8,10 +8,12 @@ const config = require('./config');
 const Browser = require('./actions/browser');
 const { Proxy, Flag } = require('./models/models');
 var dateFormat = require('dateformat');
-//const unixDateNow = Math.round(+new Date( '' ) / 1000);
-today = dateFormat(+new Date(), 'yyyy-mm-dd 00:00:00');
-const unixDateNow = Math.round(+new Date(today) / 1000);
+// const unixDateNow = Math.round(+new Date(  ) / 1000);
+console.log( 'UTC TIME: ',  Math.round( new Date().getTime() / 1000 ) );
 
+today = dateFormat(+new Date(), 'yyyy-mm-dd');
+const unixDateNow = Math.round(+new Date(today) / 1000);
+console.log( 'unixDateNow', unixDateNow );
 const cluster = require('cluster');
 const numCPUs = require('os').cpus().length;
 
@@ -20,7 +22,7 @@ if (cluster.isMaster) {
 	console.log(`Master ${process.pid} is running`);
   
 	// Fork workers.
-	for (let i = 0; i < numCPUs; i++) {
+	for (let i = 0; i < 2; i++) { // numCPUs
 	  cluster.fork();
 	}
   
@@ -29,17 +31,22 @@ if (cluster.isMaster) {
 	});
   } else {
 	(async () => {
-		let b = new Browser();
+		const b = new Browser();
 		// console.log('listProxies: ', listProxies);
-		console.log('UNIX Date Now: ', unixDateNow);
 		b.setTodayUnix(unixDateNow);
 		b.add();
-		//b.add();
-		b.on('browser_closed', function() {
-			if ( b.count() < 2 ) {
-				b.add();
-				//b.add();
+		b.on('browser_closed', function( browser ) {
+			try {
+				if ( browser.browsers.length  ) {
+					for ( let i = 0; i< browser.browsers.length ; i++ ) {
+						browser.browsers[i].close();
+					}
+				}
+			} catch( e ) {
+
 			}
+			// console.log( 'browsers: ', browser.browsers.length );
+			b.add();
 		});
 	})();
   }

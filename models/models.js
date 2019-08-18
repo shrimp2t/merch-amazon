@@ -139,28 +139,32 @@ Proxy.getUnusing = function() {
 			function(err, item) {
 				if (err) {
 					console.log( 'Err get proxy: ', err );
-					return false;
+					resolve(false);
 				}
 
-				Proxy.update(
-					{
-						where: {
-							id: item.id
+				try {
+					Proxy.update(
+						{
+							where: {
+								id: item.id
+							}
+						},
+						{
+							app_using: 'yes'
+						},
+						function(err, it) {
+							// your code here
+							if ( err ) {
+								console.log( 'ERR update Update proxy using: ' );
+							} else {
+								console.log( 'Update proxy using: ', item.id );
+							}
+							
 						}
-					},
-					{
-						app_using: 'yes'
-					},
-					function(err, it) {
-						// your code here
-						if ( err ) {
-							console.log( 'ERR update Update proxy using: ' );
-						} else {
-							console.log( 'Update proxy using: ', item.id );
-						}
-						
-					}
-				);
+					);
+				} catch ( e ) {
+
+				}
 
 				resolve(item);
 			}
